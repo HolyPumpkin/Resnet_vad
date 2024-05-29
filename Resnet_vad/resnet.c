@@ -27,7 +27,7 @@ int resnet_block_forward(Conv2dData* input, ResNetBlock* block, Conv2dData* outp
     }
 
     // 激活层
-    ret = leaky_relu(0.1, temp_output.data, input->row * input->col * input->channel,
+    ret = leaky_relu(0.1, temp_output.data, (&temp_output)->row * (&temp_output)->col * (&temp_output)->channel,
         temp_output.data);
     // 结果不正常，直接free释放后返回
     if (ret != ALGO_NORMAL) {
@@ -47,6 +47,10 @@ int resnet_block_forward(Conv2dData* input, ResNetBlock* block, Conv2dData* outp
     for (uint16_t i = 0; i < input->row * input->col * input->channel; ++i) {
         output->data[i] += input->data[i];
     }
+
+    // 激活层
+    ret = leaky_relu(0.1, output->data, output->row * output->col * output->channel,
+        output->data);
 
     // 正常释放内存
     free(temp_output.data);
@@ -89,7 +93,7 @@ int resnet_forward(Conv2dData* input, ResNet* resnet, double* output)
     }
 
     // 激活层
-    ret = leaky_relu(0.1, conv_out.data, input->row * input->col * input->channel,
+    ret = leaky_relu(0.1, conv_out.data, (&conv_out)->row * (&conv_out)->col * (&conv_out)->channel,
         conv_out.data);
     if (ret != ALGO_NORMAL) {
         free(block_output.data);
@@ -98,7 +102,7 @@ int resnet_forward(Conv2dData* input, ResNet* resnet, double* output)
 
     // 通过resnet块前向传播实现resnet网络的传播
     for (uint16_t i = 0; i < resnet->num_blocks; ++i) {
-        ret = resnet_block_forward(input, &resnet->blocks[i], &block_output);
+        ret = resnet_block_forward(&conv_out, &resnet->blocks[i], &block_output);
         if (ret != ALGO_NORMAL) {
             free(block_output.data);
             return ret;
